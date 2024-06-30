@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}Average Price by Brand{% endblock %}
+{% block content %}
+<canvas id="avgPriceChart"></canvas>
+<script>
+    fetch('/api/data')
+        .then(response => response.json())
+        .then(data => {
+            const brandPrices = {};
+            data.forEach(item => {
+                if (Array.isArray(item.replacementOptions)) {
+                    item.replacementOptions.forEach(option => {
+                        if (!brandPrices[option.Brand]) {
+                            brandPrices[option.Brand] = { total: 0, count: 0 };
+                        }
+                        brandPrices[option.Brand].total += option.Price;
+                        brandPrices[option.Brand].count++;
+                    });
+                }
+            });
+            const brands = Object.keys(brandPrices);
+            const avgPrices = brands.map(brand => brandPrices[brand].total / brandPrices[brand].count);
+            const ctx = document.getElementById('avgPriceChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: brands,
+                    datasets: [{
+                        label: 'Average Price',
+                        data: avgPrices,
+                        backgroundColor: 'rgba(75, 192, 192, 0.6)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Price ($)'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Average Price by Brand'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error:', error));
+</script>
+{% endblock %}

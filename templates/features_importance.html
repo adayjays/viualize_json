@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Feature Importance Dashboard</h2>
+
+<div>
+    <canvas id="chartFeatureImportance"></canvas>
+</div>
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for chart
+    const featureImportanceData = {};
+    data.forEach(item => {
+        item.assetInfo.attributes.forEach(attr => {
+            if (attr.name === 'Feature Importance') {
+                if (!featureImportanceData[attr.value]) {
+                    featureImportanceData[attr.value] = 0;
+                }
+                featureImportanceData[attr.value]++;
+            }
+        });
+    });
+
+    const labels = Object.keys(featureImportanceData);
+    const values = Object.values(featureImportanceData);
+
+    const ctxFeatureImportance = document.getElementById('chartFeatureImportance').getContext('2d');
+    new Chart(ctxFeatureImportance, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Feature Importance',
+                data: values,
+                backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                borderColor: 'rgba(153, 102, 255, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '# of Customers'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Feature Importance'
+                    }
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

@@ -1,0 +1,114 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Customer Preferences Dashboard</h2>
+
+<div>
+    <h3>Key Features Prioritized</h3>
+    <canvas id="chartKeyFeatures"></canvas>
+</div>
+
+<div>
+    <h3>Brand Trust Levels</h3>
+    <canvas id="chartBrandTrust"></canvas>
+</div>
+
+<!-- Add more visualizations as per your requirements -->
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for charts
+
+    // Chart.js code to render Key Features Prioritized
+    const keyFeaturesData = {};
+    data.forEach(item => {
+        // Assuming 'Key Features' are listed in attributes
+        item.assetInfo.attributes.forEach(attr => {
+            if (attr.name === 'Key Features') {
+                if (!keyFeaturesData[attr.value]) {
+                    keyFeaturesData[attr.value] = 0;
+                }
+                keyFeaturesData[attr.value]++;
+            }
+        });
+    });
+
+    const ctxKeyFeatures = document.getElementById('chartKeyFeatures').getContext('2d');
+    new Chart(ctxKeyFeatures, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(keyFeaturesData),
+            datasets: [{
+                label: 'Key Features Prioritized',
+                data: Object.values(keyFeaturesData),
+                backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                borderColor: 'rgba(255, 99, 132, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '# of Customers'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Key Features'
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart.js code to render Brand Trust Levels
+    const brandTrustData = {};
+    data.forEach(item => {
+        const brand = item.assetInfo.attributes.find(attr => attr.name === 'brand').value;
+        if (!brandTrustData[brand]) {
+            brandTrustData[brand] = 0;
+        }
+        // Assuming 'Trust Levels' data is available
+        // Adjust according to your actual data structure
+        // brandTrustData[brand] += item.trustLevel;
+    });
+
+    const ctxBrandTrust = document.getElementById('chartBrandTrust').getContext('2d');
+    new Chart(ctxBrandTrust, {
+        type: 'line',
+        data: {
+            labels: Object.keys(brandTrustData),
+            datasets: [{
+                label: 'Brand Trust Levels',
+                data: Object.values(brandTrustData),
+                fill: false,
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Brand Trust Levels'
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

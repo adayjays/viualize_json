@@ -1,0 +1,325 @@
+{% extends "base.html" %}
+{% block title %}Replacement Analysis Dashboard{% endblock %}
+{% block content %}
+<h1>Replacement Analysis Dashboard</h1>
+
+<h1>Data Visualization</h1>
+
+<h2>Customer Preferences: Key features customers prioritize</h2>
+<canvas id="featureImportanceChart" width="400" height="200"></canvas>
+
+<h2>Brand Sensitivity: Trust levels in different brands</h2>
+<canvas id="brandSensitivityChart" width="400" height="200"></canvas>
+
+<h2>Price Sensitivity: Impact of price on acceptance</h2>
+<canvas id="priceSensitivityChart" width="400" height="200"></canvas>
+
+<!-- <h2>Feature Importance: Which features drive choices</h2>
+<canvas id="featureImportanceChart" width="400" height="200"></canvas> -->
+
+<h2>Customer Satisfaction: Trends in acceptance rates as a satisfaction metric</h2>
+<canvas id="customerSatisfactionChart" width="400" height="200"></canvas>
+
+<h2>Market Trends: Shifts in preferences over time</h2>
+<canvas id="marketTrendsChart" width="400" height="200"></canvas>
+
+<h2>Replacement Effectiveness: How well current replacements meet customer needs</h2>
+<canvas id="replacementEffectivenessChart" width="400" height="200"></canvas>
+
+<h2>Competitive Analysis: How our offerings compare to competitors</h2>
+<canvas id="competitiveAnalysisChart" width="400" height="200"></canvas>
+
+<script>
+    async function fetchData() {
+        const response = await fetch('/api/data');
+        const data = await response.json();
+
+        // Extract data for visualizations
+       
+        const brands = {};
+        const prices = [];
+        const acceptanceRates = [];
+
+        const features = {};
+            const featureNames = ['screen size', 'display technology', 'screenSize', 'operatingSystem'];
+            data.forEach(item => {
+                if (item.assetInfo && Array.isArray(item.assetInfo.attributes)) {
+                    item.assetInfo.attributes.forEach(attr => {
+                        const lowerName = attr.name.toLowerCase();
+                        if (featureNames.includes(lowerName)) {
+                            if (lowerName === 'screensize') {
+                                if (!features['screen size']) {
+                                    features['screen size'] = [];
+                                }
+                                features['screen size'].push(attr.value);
+                            } else {
+                                features[lowerName] = attr.value;
+                            }
+                        }
+                    });
+                }
+            });
+
+
+        data.forEach(item => {
+            // Process feature importance and customer preferences
+            item.assetInfo.attributes.forEach(attribute => {
+                if (features[attribute.name]) {
+                    features[attribute.name]++;
+                } else {
+                    features[attribute.name] = 1;
+                }
+            });
+
+            // Process brand sensitivity
+            if (Array.isArray(item.replacementOptions)) {
+                item.replacementOptions.forEach(option => {
+                    if (brands[option.Brand]) {
+                        brands[option.Brand]++;
+                    } else {
+                        brands[option.Brand] = 1;
+                    }
+                });
+
+                // Process price sensitivity
+
+                item.replacementOptions.forEach(option => {
+                    prices.push(option.Price);
+                });
+            }
+
+            // Process customer satisfaction (acceptance rates)
+            if (item.status === 'active') {
+                acceptanceRates.push(1);
+            } else {
+                acceptanceRates.push(0);
+            }
+        });
+        // Market Trends Data
+        const marketTrends = {};
+        data.forEach(item => {
+            const year = new Date(item.createdAt).getFullYear();
+            if (marketTrends[year]) {
+                marketTrends[year]++;
+            } else {
+                marketTrends[year] = 1;
+            }
+        });
+
+        // Prepare data for charts
+        const featureLabels = Object.keys(features);
+        const featureCounts = Object.values(features);
+
+        const brandLabels = Object.keys(brands);
+        const brandCounts = Object.values(brands);
+
+        const avgPrice = prices.reduce((a, b) => a + b, 0) / prices.length;
+        const acceptanceRate = acceptanceRates.reduce((a, b) => a + b, 0) / acceptanceRates.length;
+
+        const marketTrendLabels = Object.keys(marketTrends);
+        const marketTrendCounts = Object.values(marketTrends);
+
+        // Feature Importance Chart
+        const featureCtx = document.getElementById('featureImportanceChart').getContext('2d');
+        const featureChart = new Chart(featureCtx, {
+            type: 'bar',
+            data: {
+                labels: featureLabels,
+                datasets: [{
+                    label: 'Feature Importance',
+                    data: featureCounts,
+                    backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                    borderColor: 'rgba(75, 192, 192, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Brand Sensitivity Chart
+        const brandCtx = document.getElementById('brandSensitivityChart').getContext('2d');
+        const brandChart = new Chart(brandCtx, {
+            type: 'pie',
+            data: {
+                labels: brandLabels,
+                datasets: [{
+                    label: 'Brand Sensitivity',
+                    data: brandCounts,
+                    backgroundColor: [
+                        'rgba(255, 99, 132, 0.2)',
+                        'rgba(54, 162, 235, 0.2)',
+                        'rgba(255, 206, 86, 0.2)',
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(153, 102, 255, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(255, 99, 132, 1)',
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(153, 102, 255, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            }
+        });
+
+        // Price Sensitivity Chart
+        const priceCtx = document.getElementById('priceSensitivityChart').getContext('2d');
+        const priceChart = new Chart(priceCtx, {
+            type: 'line',
+            data: {
+                labels: prices.map((_, index) => index + 1),
+                datasets: [{
+                    label: 'Price Sensitivity',
+                    data: prices,
+                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Customer Satisfaction Chart
+        const customerSatisfactionCtx = document.getElementById('customerSatisfactionChart').getContext('2d');
+        const customerSatisfactionChart = new Chart(customerSatisfactionCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Accepted', 'Rejected'],
+                datasets: [{
+                    label: 'Customer Satisfaction',
+                    data: [acceptanceRate, 1 - acceptanceRate],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(255, 99, 132, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(1, 255, 2, 1)',
+                        'rgba(255, 1, 1, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            }
+        });
+
+        // Market Trends Chart
+        const marketTrendsCtx = document.getElementById('marketTrendsChart').getContext('2d');
+        new Chart(marketTrendsCtx, {
+            type: 'line',
+            data: {
+                labels: marketTrendLabels,
+                datasets: [{
+                    label: 'Market Trends',
+                    data: marketTrendCounts,
+                    backgroundColor: 'rgba(153, 102, 255, 0.2)',
+                    borderColor: 'rgba(153, 102, 255, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+        // Replacement Effectiveness Data
+        const replacementEffectiveness = { "effective": 0, "ineffective": 0 };
+            data.forEach(item => {
+                if (Array.isArray(item.replacementOptions)) {
+                    const brandAttribute = item.assetInfo.attributes.find(attr => attr.name === 'brand');
+                    if (brandAttribute) {
+                        const effective = item.replacementOptions.some(option => option.Brand === brandAttribute.value);
+                        if (effective) {
+                            replacementEffectiveness.effective++;
+                        } else {
+                            replacementEffectiveness.ineffective++;
+                        }
+                    }
+                }
+            });
+
+
+        // Replacement Effectiveness Chart
+        const replacementEffectivenessCtx = document.getElementById('replacementEffectivenessChart').getContext('2d');
+        new Chart(replacementEffectivenessCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Effective', 'Ineffective'],
+                datasets: [{
+                    label: 'Replacement Effectiveness',
+                    data: [replacementEffectiveness.effective, replacementEffectiveness.ineffective],
+                    backgroundColor: [
+                        'rgba(75, 192, 192, 0.2)',
+                        'rgba(255, 99, 132, 0.2)'
+                    ],
+                    borderColor: [
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 99, 132, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            }
+        });
+
+        // Competitive Analysis Data
+        const competitors = {};
+        data.forEach(item => {
+            if (Array.isArray(item.replacementOptions)) {
+                item.replacementOptions.forEach(option => {
+                    if (competitors[option.Brand]) {
+                        competitors[option.Brand]++;
+                    } else {
+                        competitors[option.Brand] = 1;
+                    }
+                });
+            }
+        });
+        const competitorLabels = Object.keys(competitors);
+        const competitorCounts = Object.values(competitors);
+
+        // Competitive Analysis Chart
+        const competitiveAnalysisCtx = document.getElementById('competitiveAnalysisChart').getContext('2d');
+        new Chart(competitiveAnalysisCtx, {
+            type: 'bar',
+            data: {
+                labels: competitorLabels,
+                datasets: [{
+                    label: 'Competitive Analysis',
+                    data: competitorCounts,
+                    backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                    borderColor: 'rgba(255, 159, 64, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+
+
+    }
+
+    // Fetch data and create charts when the page loads
+    window.onload = fetchData;
+</script>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Market Trends Dashboard</h2>
+
+<div>
+    <canvas id="chartMarketTrends"></canvas>
+</div>
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for chart
+    const marketTrendsData = {};
+    data.forEach(item => {
+        const year = new Date(item.updatedAt).getFullYear();
+        if (!marketTrendsData[year]) {
+            marketTrendsData[year] = 0;
+        }
+        marketTrendsData[year]++;
+    });
+
+    const labels = Object.keys(marketTrendsData);
+    const values = Object.values(marketTrendsData);
+
+    const ctxMarketTrends = document.getElementById('chartMarketTrends').getContext('2d');
+    new Chart(ctxMarketTrends, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Market Trends',
+                data: values,
+                fill: false,
+                borderColor: 'rgba(75, 192, 192, 1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Customers'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Year'
+                    }
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

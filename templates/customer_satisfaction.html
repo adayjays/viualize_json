@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Customer Satisfaction Dashboard</h2>
+
+<div>
+    <canvas id="chartCustomerSatisfaction"></canvas>
+</div>
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for chart
+    const satisfactionData = {};
+    data.forEach(item => {
+        const satisfactionLevel = item.customerSatisfaction || 'Unknown';
+        if (!satisfactionData[satisfactionLevel]) {
+            satisfactionData[satisfactionLevel] = 0;
+        }
+        satisfactionData[satisfactionLevel]++;
+    });
+
+    const labels = Object.keys(satisfactionData);
+    const values = Object.values(satisfactionData);
+
+    const ctxCustomerSatisfaction = document.getElementById('chartCustomerSatisfaction').getContext('2d');
+    new Chart(ctxCustomerSatisfaction, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Customer Satisfaction',
+                data: values,
+                backgroundColor: 'rgba(255, 159, 64, 0.2)',
+                borderColor: 'rgba(255, 159, 64, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '# of Customers'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Satisfaction Level'
+                    }
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

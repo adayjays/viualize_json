@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Brand Loyalty Dashboard</h2>
+
+<div>
+    <h3>Replacement Options by Brand</h3>
+    <canvas id="chartReplacementOptions"></canvas>
+</div>
+
+<div>
+    <h3>Screen Sizes Distribution</h3>
+    <canvas id="chartScreenSizes"></canvas>
+</div>
+
+<!-- Add more visualizations as per your requirements -->
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for charts
+    const brandsData = {};
+    data.forEach(item => {
+        const brand = item.assetInfo.attributes.find(attr => attr.name === 'brand').value;
+        if (!brandsData[brand]) {
+            brandsData[brand] = 0;
+        }
+        brandsData[brand]++;
+    });
+
+    // Chart.js code to render Replacement Options by Brand
+    const ctxReplacementOptions = document.getElementById('chartReplacementOptions').getContext('2d');
+    new Chart(ctxReplacementOptions, {
+        type: 'bar',
+        data: {
+            labels: Object.keys(brandsData),
+            datasets: [{
+                label: 'Replacement Options by Brand',
+                data: Object.values(brandsData),
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '# of Replacement Options'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Brand'
+                    }
+                }
+            }
+        }
+    });
+
+    // Chart.js code to render Screen Sizes Distribution
+    const screenSizesData = {};
+    data.forEach(item => {
+        const screenSize = item.assetInfo.attributes.find(attr => attr.name === 'Screen Size').value;
+        if (!screenSizesData[screenSize]) {
+            screenSizesData[screenSize] = 0;
+        }
+        screenSizesData[screenSize]++;
+    });
+
+    const ctxScreenSizes = document.getElementById('chartScreenSizes').getContext('2d');
+    new Chart(ctxScreenSizes, {
+        type: 'pie',
+        data: {
+            labels: Object.keys(screenSizesData),
+            datasets: [{
+                label: 'Screen Sizes Distribution',
+                data: Object.values(screenSizesData),
+                backgroundColor: [
+                    'rgba(255, 99, 132, 0.2)',
+                    'rgba(54, 162, 235, 0.2)',
+                    'rgba(255, 206, 86, 0.2)',
+                    'rgba(75, 192, 192, 0.2)',
+                    'rgba(153, 102, 255, 0.2)',
+                    'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                    'rgba(255, 99, 132, 1)',
+                    'rgba(54, 162, 235, 1)',
+                    'rgba(255, 206, 86, 1)',
+                    'rgba(75, 192, 192, 1)',
+                    'rgba(153, 102, 255, 1)',
+                    'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'top',
+                },
+                title: {
+                    display: true,
+                    text: 'Screen Sizes Distribution'
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

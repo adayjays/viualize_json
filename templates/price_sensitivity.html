@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Price Sensitivity Dashboard</h2>
+
+<div>
+    <canvas id="chartPriceSensitivity"></canvas>
+</div>
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for chart
+    const priceData = {};
+    data.forEach(item => {
+        item.replacementOptions.forEach(option => {
+            const priceRange = Math.floor(option.Price / 50) * 50; // Adjust to suitable range for your data
+            if (!priceData[priceRange]) {
+                priceData[priceRange] = 0;
+            }
+            priceData[priceRange]++;
+        });
+    });
+
+    const labels = Object.keys(priceData).map(key => `${key} - ${parseInt(key) + 50}`);
+    const values = Object.values(priceData);
+
+    const ctxPriceSensitivity = document.getElementById('chartPriceSensitivity').getContext('2d');
+    new Chart(ctxPriceSensitivity, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Price Sensitivity',
+                data: values,
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '# of Customers'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Price Range'
+                    }
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

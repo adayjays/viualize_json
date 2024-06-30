@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Replacement Effectiveness Dashboard</h2>
+
+<div>
+    <canvas id="chartReplacementEffectiveness"></canvas>
+</div>
+
+<script>
+fetch('/api/data')
+.then(response => response.json())
+.then(data => {
+    // Prepare data for chart
+    const effectivenessData = {};
+    data.forEach(item => {
+        const effectiveness = item.replacementEffectiveness || 'Unknown';
+        if (!effectivenessData[effectiveness]) {
+            effectivenessData[effectiveness] = 0;
+        }
+        effectivenessData[effectiveness]++;
+    });
+
+    const labels = Object.keys(effectivenessData);
+    const values = Object.values(effectivenessData);
+
+    const ctxReplacementEffectiveness = document.getElementById('chartReplacementEffectiveness').getContext('2d');
+    new Chart(ctxReplacementEffectiveness, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Replacement Effectiveness',
+                data: values,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '# of Replacements'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Effectiveness Level'
+                    }
+                }
+            }
+        }
+    });
+
+})
+.catch(error => {
+    console.error('Error fetching data:', error);
+});
+</script>
+{% endblock %}

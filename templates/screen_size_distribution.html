@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Size Distribution{% endblock %}
+{% block content %}
+<canvas id="sizeDistributionChart"></canvas>
+<script>
+    fetch('/api/data')
+        .then(response => response.json())
+        .then(data => {
+            const sizeCounts = {};
+            data.forEach(item => {
+                if (Array.isArray(item.replacementOptions)) {
+                    item.replacementOptions.forEach(option => {
+                        const size = option.Size.toString();
+                        if (!sizeCounts[size]) {
+                            sizeCounts[size] = 0;
+                        }
+                        sizeCounts[size]++;
+                    });
+                }
+            });
+            const sizes = Object.keys(sizeCounts).sort((a, b) => parseFloat(a) - parseFloat(b));
+            const counts = sizes.map(size => sizeCounts[size]);
+            const ctx = document.getElementById('sizeDistributionChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: sizes,
+                    datasets: [{
+                        label: 'Number of Options',
+                        data: counts,
+                        borderColor: 'rgba(255, 99, 132, 1)',
+                        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                        pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Screen Size (inches)'
+                            }
+                        },
+                        y: {
+                            beginAtZero: true,
+                            title: {
+                                display: true,
+                                text: 'Number of Options'
+                            }
+                        }
+                    },
+                    plugins: {
+                        title: {
+                            display: true,
+                            text: 'Distribution of Screen Sizes'
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error:', error));
+</script>
+{% endblock %}

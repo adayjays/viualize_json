@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block title %}Service Order Analysis{% endblock %}
+
+{% block content %}
+<canvas id="myChart"></canvas>
+
+<script>
+    fetch('/api/data')
+        .then(response => response.json())
+        .then(data => {
+            const brands = {};
+            data.forEach((item, index) => {
+                // console.log(`Processing item ${index}:`, item);
+                if (Array.isArray(item.replacementOptions)) { // Check if replacementOptions is an array
+                    item.replacementOptions.forEach(option => {
+                        if (!brands[option.Brand]) {
+                            brands[option.Brand] = 0;
+                        }
+                        brands[option.Brand]++;
+                    });
+                } else {
+                    console.warn(`Item ${index}: replacementOptions is not an array.`);
+                }
+            });
+
+            const labels = Object.keys(brands);
+            const values = Object.values(brands);
+
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '# of Replacement Options',
+                        data: values,
+                        backgroundColor: ['rgba(255, 99, 132, 0.2)', 'rgba(54, 162, 235, 0.2)', 'rgba(255, 206, 86, 0.2)', 'rgba(75, 192, 192, 0.2)'],
+                        borderColor: ['rgb(255, 99, 132)', 'rgb(54, 162, 235)', 'rgb(255, 206, 86)', 'rgb(75, 192, 192)'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching or processing data:', error);
+        });
+</script>
+
+{% endblock %}

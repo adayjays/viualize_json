@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Price Range Distribution{% endblock %}
+{% block content %}
+<canvas id="priceRangeChart"></canvas>
+<script>
+    fetch('/api/data')
+        .then(response => response.json())
+        .then(data => {
+            const priceRanges = {
+                '0-100': 0,
+                '101-150': 0,
+                '151-200': 0,
+                '201+': 0
+            };
+            data.forEach(item => {
+                if (Array.isArray(item.replacementOptions)) {
+                    item.replacementOptions.forEach(option => {
+                        if (option.Price <= 100) priceRanges['0-100']++;
+                        else if (option.Price <= 150) priceRanges['101-150']++;
+                        else if (option.Price <= 200) priceRanges['151-200']++;
+                        else priceRanges['201+']++;
+                    });
+                }
+            });
+            const ctx = document.getElementById('priceRangeChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: Object.keys(priceRanges),
+                    datasets: [{
+                        data: Object.values(priceRanges),
+                        backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    title: {
+                        display: true,
+                        text: 'Price Range Distribution of Replacement Options'
+                    }
+                }
+            });
+        })
+        .catch(error => console.error('Error:', error));
+</script>
+{% endblock %}
