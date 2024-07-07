@@ -31,7 +31,47 @@ def filter_data(data):
         filtered.append(filtered_item)
     return filtered
 
+def filter_order_number(data):
+    filtered = []
+    for item in data:
+        order_number = item.get("orderNumber")
+        if order_number:
+            asset_info = item.get("assetInfo", {})
+            if isinstance(asset_info, str):
+                asset_info = {}  # Set asset_info to an empty dict if it's a string
+
+            replacement_options = item.get("replacementOptions") or []
+            if isinstance(replacement_options, str):
+                replacement_options = []  # Set replacement_options to an empty list if it's a string
+
+            matching_options = [
+                option for option in replacement_options 
+                if isinstance(option, dict) and option.get("ModelNumber") == order_number
+            ]
+
+            filtered_item = {
+                "serviceOrderNumber": item.get("serviceOrderNumber"),
+                "orderNumber": item.get("orderNumber"),
+                "status": item.get("status"),
+                "createdAt": item.get("createdAt"),
+                "source": item.get("source"),
+                "orderType": item.get("orderType"),
+                "client": item.get("client"),
+                "assetInfo": {
+                    "assetCatalogName": asset_info.get("assetCatalogName"),
+                    "assetMakeName": asset_info.get("assetMakeName"),
+                    "assetTypeName": asset_info.get("assetTypeName"),
+                    "attributes": asset_info.get("attributes", [])
+                },
+                "matchingOptions": matching_options,
+                "replacementOptions": replacement_options
+            }
+            filtered.append(filtered_item)
+    return filtered
+
+
 filtered_data = filter_data(data)
+filtered_order_numbers = filter_order_number(data)
 
 @app.route('/')
 def home():
@@ -88,6 +128,11 @@ def competitive_analysis():
 @app.route('/api/data')
 def get_data():
     return jsonify(filtered_data)
+
+
+@app.route('/api/filtered_order_numbers')
+def get_filtered_data():
+    return jsonify(filtered_order_numbers)
 
 @app.route('/api/dashboard-data')
 def dashboard_data():
