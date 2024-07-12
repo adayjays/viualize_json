@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Filtered Data Table{% endblock %}
+{% block content %}
+
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+
+    th,
+    td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+    }
+
+    th {
+        background-color: #f2f2f2;
+    }
+
+    .download-buttons {
+        margin: 20px 0;
+    }
+</style>
+
+<div class="download-buttons">
+    <button onclick="downloadCSV()">Download as CSV</button>
+    <button onclick="downloadPDF()">Download as PDF</button>
+</div>
+<table id="data-table">
+    <thead>
+        <tr>
+            <th>Service Order Number</th>
+            <th>Order Number</th>
+            <th>Status</th>
+            <th>Created At</th>
+            <th>Source</th>
+            <th>Order Type</th>
+            <th>Client</th>
+            <th>Asset Info</th>
+            <th>Matching Options</th>
+            <th>Replacement Options</th>
+        </tr>
+    </thead>
+    <tbody>
+        <!-- Data rows will be inserted here -->
+    </tbody>
+</table>
+
+<script>
+    async function fetchData() {
+        try {
+            const response = await fetch('/api/filtered_order_numbers');
+            const data = await response.json();
+            const filteredData = filterOrderNumber(data);
+            populateTable(filteredData);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
+    }
+
+    function filterOrderNumber(data) {
+        const filtered = [];
+        for (const item of data) {
+            const orderNumber = item.orderNumber;
+            if (orderNumber) {
+                let assetInfo = item.assetInfo || {};
+                if (typeof assetInfo === 'string') {
+                    assetInfo = {};
+                }
+
+                let replacementOptions = item.replacementOptions || [];
+                if (typeof replacementOptions === 'string') {
+                    replacementOptions = [];
+                }
+
+                const matchingOptions = replacementOptions.filter(option =>
+                    typeof option === 'object' && option.ModelNumber === orderNumber
+                );
+
+                filtered.push({
+                    serviceOrderNumber: item.serviceOrderNumber,
+                    orderNumber: item.orderNumber,
+                    status: item.status,
+                    createdAt: item.createdAt,
+                    source: item.source,
+                    orderType: item.orderType,
+                    client: item.client,
+                    assetInfo: {
+                        assetCatalogName: assetInfo.assetCatalogName,
+                        assetMakeName: assetInfo.assetMakeName,
+                        assetTypeName: assetInfo.assetTypeName,
+                        attributes: assetInfo.attributes || []
+                    },
+                    matchingOptions: matchingOptions,
+                    replacementOptions: replacementOptions
+                });
+            }
+        }
+        return filtered;
+    }
+
+    function populateTable(data) {
+        const tableBody = document.querySelector("#data-table tbody");
+        tableBody.innerHTML = '';  // Clear any existing rows
+        data.forEach(item => {
+            const row = document.createElement("tr");
+
+            row.innerHTML = `
+                    <td>${item.serviceOrderNumber || ''}</td>
+                    <td>${item.orderNumber || ''}</td>
+                    <td>${item.status || ''}</td>
+                    <td>${item.createdAt || ''}</td>
+                    <td>${item.source || ''}</td>
+                    <td>${item.orderType || ''}</td>
+                    <td>${item.client || ''}</td>
+                    <td>
+                        Catalog: ${item.assetInfo.assetCatalogName || ''}<br>
+                        Make: ${item.assetInfo.assetMakeName || ''}<br>
+                        Type: ${item.assetInfo.assetTypeName || ''}<br>
+                        Attributes: ${item.assetInfo.attributes.join(', ') || ''}
+                    </td>
+                    <td>${item.matchingOptions.map(option => JSON.stringify(option)).join('<br>') || ''}</td>
+                    <td>${item.replacementOptions.map(option => JSON.stringify(option)).join('<br>') || ''}</td>
+                `;
+
+            tableBody.appendChild(row);
+        });
+    }
+
+    function downloadCSV() {
+        const rows = document.querySelectorAll("table tr");
+        let csvContent = "";
+        rows.forEach(row => {
+            const cols = row.querySelectorAll("td, th");
+            const rowData = [];
+            cols.forEach(col => rowData.push(`"${col.innerText.replace(/"/g, '""')}"`));
+            csvContent += rowData.join(",") + "\n";
+        });
+
+        const blob = new Blob([csvContent], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.setAttribute("href", url);
+        a.setAttribute("download", "filtered_data.csv");
+        a.click();
+    }
+
+    function downloadPDF() {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+
+        doc.autoTable({ html: '#data-table' });
+        doc.save('filtered_data.pdf');
+    }
+
+    // Fetch data and populate table on load
+    fetchData();
+</script>
+<!-- Add jsPDF and jsPDF-AutoTable scripts -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.4.0/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.14/jspdf.plugin.autotable.min.js"></script>
+
+{% endblock %}

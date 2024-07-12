@@ -77,6 +77,10 @@ filtered_order_numbers = filter_order_number(data)
 def home():
     return render_template('dashboard.html')
 
+@app.route('/tables')
+def tabless():
+    return render_template('tables.html')
+
 @app.route('/service_order')
 def service_order():
     return render_template('ServiceOrder.html')
@@ -124,6 +128,16 @@ def replacement_effectiveness():
 @app.route('/competitiveanalysis')
 def competitive_analysis():
     return render_template('competitive_analysis.html')
+
+
+@app.route('/brand_comparison')
+def branComparison():
+    return render_template('brand_comparison.html')
+
+
+@app.route('/filtered_orders')
+def secondDash():
+    return render_template('second_dashboard.html')
 
 @app.route('/api/data')
 def get_data():

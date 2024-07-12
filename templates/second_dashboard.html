@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block title %}Service Order Analysis{% endblock %}
+
+{% block content %}
+    <h1>Dashboard</h1>
+    <canvas id="statusChart" width="400" height="200"></canvas>
+    <canvas id="orderTypeChart" width="400" height="200"></canvas>
+    <canvas id="ordersOverTimeChart" width="400" height="200"></canvas>
+    <canvas id="assetTypeChart" width="400" height="200"></canvas>
+
+    <script>
+        fetch('http://localhost:5000/api/filtered_order_numbers')
+            .then(response => response.json())
+            .then(data => {
+                const statusCounts = {};
+                const orderTypeCounts = {};
+                const ordersOverTime = {};
+                const assetTypeCounts = {};
+
+                data.forEach(item => {
+                    // Count status occurrences
+                    const status = item.status;
+                    statusCounts[status] = (statusCounts[status] || 0) + 1;
+
+                    // Count order type occurrences
+                    const orderType = item.orderType;
+                    orderTypeCounts[orderType] = (orderTypeCounts[orderType] || 0) + 1;
+
+                    // Count orders over time
+                    const createdAt = new Date(item.createdAt).toLocaleDateString();
+                    ordersOverTime[createdAt] = (ordersOverTime[createdAt] || 0) + 1;
+
+                    // Count asset type occurrences
+                    const assetTypeName = item.assetInfo.assetTypeName;
+                    assetTypeCounts[assetTypeName] = (assetTypeCounts[assetTypeName] || 0) + 1;
+                });
+
+                // Create status chart
+                new Chart(document.getElementById('statusChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(statusCounts),
+                        datasets: [{
+                            label: 'Count of Orders by Status',
+                            data: Object.values(statusCounts),
+                            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                            borderColor: 'rgba(75, 192, 192, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Create order type chart
+                new Chart(document.getElementById('orderTypeChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(orderTypeCounts),
+                        datasets: [{
+                            label: 'Count of Orders by Order Type',
+                            data: Object.values(orderTypeCounts),
+                            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                            borderColor: 'rgba(54, 162, 235, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Create orders over time chart
+                new Chart(document.getElementById('ordersOverTimeChart'), {
+                    type: 'line',
+                    data: {
+                        labels: Object.keys(ordersOverTime),
+                        datasets: [{
+                            label: 'Orders Over Time',
+                            data: Object.values(ordersOverTime),
+                            fill: false,
+                            borderColor: 'rgba(255, 99, 132, 1)',
+                            tension: 0.1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                type: 'time',
+                                time: {
+                                    unit: 'day'
+                                }
+                            },
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+
+                // Create asset type chart
+                new Chart(document.getElementById('assetTypeChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(assetTypeCounts),
+                        datasets: [{
+                            label: 'Distribution of Asset Types',
+                            data: Object.values(assetTypeCounts),
+                            backgroundColor: 'rgba(255, 206, 86, 0.2)',
+                            borderColor: 'rgba(255, 206, 86, 1)',
+                            borderWidth: 1
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            })
+            .catch(error => console.error('Error fetching data:', error));
+    </script>
+{% endblock %}
