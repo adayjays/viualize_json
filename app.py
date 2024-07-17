@@ -6,52 +6,16 @@ app = Flask(__name__)
 with open('file.json', 'r') as f:
     data = json.load(f)
 
-def filter_data(data):
+def filter_data(data, target_asset_type):
     filtered = []
     for item in data:
-        asset_info = item.get("assetInfo", {})
-        if isinstance(asset_info, str):
-            asset_info = {}  # Set asset_info to an empty dict if it's a string
-
-        filtered_item = {
-            "serviceOrderNumber": item.get("serviceOrderNumber"),
-            "status": item.get("status"),
-            "createdAt": item.get("createdAt"),
-            "source": item.get("source"),
-            "orderType": item.get("orderType"),
-            "client": item.get("client"),
-            "assetInfo": {
-                "assetCatalogName": asset_info.get("assetCatalogName"),
-                "assetMakeName": asset_info.get("assetMakeName"),
-                "assetTypeName": asset_info.get("assetTypeName"),
-                "attributes": asset_info.get("attributes", [])
-            },
-            "replacementOptions": item.get("replacementOptions", [])
-        }
-        filtered.append(filtered_item)
-    return filtered
-
-def filter_order_number(data):
-    filtered = []
-    for item in data:
-        order_number = item.get("orderNumber")
-        if order_number:
+        asset_type = item.get("Asset Type")
+        if asset_type == target_asset_type:
             asset_info = item.get("assetInfo", {})
             if isinstance(asset_info, str):
                 asset_info = {}  # Set asset_info to an empty dict if it's a string
-
-            replacement_options = item.get("replacementOptions") or []
-            if isinstance(replacement_options, str):
-                replacement_options = []  # Set replacement_options to an empty list if it's a string
-
-            matching_options = [
-                option for option in replacement_options 
-                if isinstance(option, dict) and option.get("ModelNumber") == order_number
-            ]
-
             filtered_item = {
                 "serviceOrderNumber": item.get("serviceOrderNumber"),
-                "orderNumber": item.get("orderNumber"),
                 "status": item.get("status"),
                 "createdAt": item.get("createdAt"),
                 "source": item.get("source"),
@@ -63,15 +27,52 @@ def filter_order_number(data):
                     "assetTypeName": asset_info.get("assetTypeName"),
                     "attributes": asset_info.get("attributes", [])
                 },
+                "Asset Type": asset_type,
+                "replacementOptions": item.get("replacementOptions", [])
+            }
+            filtered.append(filtered_item)
+    return filtered
+
+def filter_order_number(data, target_asset_type):
+    filtered = []
+    for item in data:
+        asset_type = item.get("Asset Type")
+        order_number = item.get("orderNumber")
+        if asset_type == target_asset_type and order_number:
+            asset_info = item.get("assetInfo", {})
+            if isinstance(asset_info, str):
+                asset_info = {}  # Set asset_info to an empty dict if it's a string
+            replacement_options = item.get("replacementOptions") or []
+            if isinstance(replacement_options, str):
+                replacement_options = []  # Set replacement_options to an empty list if it's a string
+            matching_options = [
+                option for option in replacement_options
+                if isinstance(option, dict) and option.get("ModelNumber") == order_number
+            ]
+            filtered_item = {
+                "serviceOrderNumber": item.get("serviceOrderNumber"),
+                "orderNumber": order_number,
+                "status": item.get("status"),
+                "createdAt": item.get("createdAt"),
+                "source": item.get("source"),
+                "orderType": item.get("orderType"),
+                "client": item.get("client"),
+                "assetInfo": {
+                    "assetCatalogName": asset_info.get("assetCatalogName"),
+                    "assetMakeName": asset_info.get("assetMakeName"),
+                    "assetTypeName": asset_info.get("assetTypeName"),
+                    "attributes": asset_info.get("attributes", [])
+                },
+                "Asset Type": asset_type,
                 "matchingOptions": matching_options,
                 "replacementOptions": replacement_options
             }
             filtered.append(filtered_item)
     return filtered
 
-
-filtered_data = filter_data(data)
-filtered_order_numbers = filter_order_number(data)
+# Assuming 'data' is your list of items
+filtered_data = filter_data(data, "Television")
+filtered_order_data = filter_order_number(data, "Television")
 
 @app.route('/')
 def home():
